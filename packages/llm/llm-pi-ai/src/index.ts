@@ -151,6 +151,9 @@ export function apply(ctx: Context, config: Config): void {
   let current: () => Config = () => config
   let lastRaw: Config | undefined
   let memoized: ReadonlyMap<string, ResolvedPiAiProviderProfile> | undefined
+  // Capacity-fallback warnings re-derive on every settings change, so log each
+  // distinct one once per process instead of once per hot reload.
+  const warnedContextWindows = new Set<string>()
   /**
    * The resolved profiles for the current configuration, memoized by the raw
    * snapshot's identity — which is also what makes the adapter's own snapshot
@@ -166,6 +169,13 @@ export function apply(ctx: Context, config: Config): void {
     const raw = current()
     if (raw === lastRaw && memoized !== undefined) return memoized
     const next = resolveProfiles(raw.providers)
+    for (const profile of next.values()) {
+      for (const warning of profile.warnings) {
+        if (warnedContextWindows.has(warning)) continue
+        warnedContextWindows.add(warning)
+        ctx.logger.warn(`llm-pi-ai: ${warning}`)
+      }
+    }
     lastRaw = raw
     memoized = next
     return next

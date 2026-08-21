@@ -433,6 +433,14 @@ export interface RouteCatalog {
    * picked, so only an explicit configuration lands here.
    */
   configuredMaxTokens: ReadonlyMap<string, number>
+  /**
+   * One diagnostic per model whose contextWindow came from the route default
+   * because neither its settings entry nor the installed catalog sized it.
+   * Resolution stays silent; the mount boundary logs what lands here, so a
+   * local server whose real window is far below the default stops being an
+   * invisible misprice of compaction pressure and overflow detection.
+   */
+  warnings: readonly string[]
 }
 
 /**
@@ -489,6 +497,7 @@ export function resolveRouteModels(request: RouteCatalogRequest): RouteCatalog {
     || request.compat?.supportsReasoningEffort !== undefined
   const seen = new Set<string>()
   const configuredMaxTokens = new Map<string, number>()
+  const warnings: string[] = []
   const models = entries.map((entry) => {
     if (entry.id.length === 0) invalid(provider, 'has a model with an empty id')
     if (seen.has(entry.id)) invalid(provider, `lists model "${entry.id}" more than once`)
@@ -510,6 +519,14 @@ export function resolveRouteModels(request: RouteCatalogRequest): RouteCatalog {
     const contextWindow = entry.contextWindow ?? base?.contextWindow ?? request.defaultContextWindow
     if (!Number.isInteger(contextWindow) || contextWindow <= 0) {
       invalid(provider, `model "${entry.id}" contextWindow must be a positive integer`)
+    }
+    // The fallback is a guess by construction; name it so a deployment whose
+    // server serves a smaller window can correct the entry instead of finding
+    // out at provider overflow.
+    if (entry.contextWindow === undefined && base?.contextWindow === undefined) {
+      warnings.push(
+        `provider "${provider}" model "${entry.id}" declares no contextWindow and the installed catalog does not size it; using the route default ${request.defaultContextWindow}. Declare contextWindow on the model's settings entry so compaction pressure and overflow detection price the window the server actually serves.`,
+      )
     }
     const maxTokens = entry.maxTokens ?? base?.maxTokens ?? request.defaultMaxTokens
     if (!Number.isInteger(maxTokens) || maxTokens <= 0) {
@@ -542,5 +559,5 @@ export function resolveRouteModels(request: RouteCatalogRequest): RouteCatalog {
     invalid(provider, 'sets compat reasoning switches, but no model on the route speaks openai-completions;'
       + ' thinkingFormat and supportsReasoningEffort exist only on that protocol')
   }
-  return { models, configuredMaxTokens }
+  return { models, configuredMaxTokens, warnings }
 }

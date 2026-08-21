@@ -184,6 +184,13 @@ describe('hand-declared providers', () => {
     // the model's capability and stops there.
     expect(resolved.get('acme-gateway')?.configuredMaxTokens.get('bare')).toBeUndefined()
     expect(resolved.get('acme-gateway')?.configuredMaxTokens.get('sized')).toBe(512)
+    // A guessed window is named, not silent: one diagnostic per unsized model,
+    // citing the default used, and none for a model that declares its own.
+    expect(resolved.get('acme-gateway')?.warnings).toEqual([expect.stringContaining('model "bare" declares no contextWindow')])
+    expect(resolved.get('acme-gateway')?.warnings[0]).toContain('262144')
+    expect(resolved.get('acme-gateway')?.warnings[0]).not.toContain('sized')
+    expect(resolved.get('tuned-gateway')?.warnings).toEqual([expect.stringContaining('model "bare" declares no contextWindow')])
+    expect(resolved.get('tuned-gateway')?.warnings[0]).toContain('4096')
   })
 
   it('takes a model’s declared modalities, then the catalog’s, then the route’s', () => {

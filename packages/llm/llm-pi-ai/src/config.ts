@@ -166,6 +166,12 @@ export interface ResolvedPiAiProviderProfile
    * own, so a catalog capability must not appear here.
    */
   configuredMaxTokens: ReadonlyMap<string, number>
+  /**
+   * Capacity-fallback diagnostics from catalog materialization, one per model
+   * whose contextWindow the route default had to guess. Carried for the mount
+   * boundary to log once per process; resolution itself stays silent.
+   */
+  warnings: readonly string[]
 }
 
 /** Plugin configuration: the provider routes this instance owns. */
@@ -358,6 +364,7 @@ export function resolveProfiles(
       ...rest.headers === undefined ? {} : { headers: { ...rest.headers } },
       ...rest.thinkingBudgets === undefined ? {} : { thinkingBudgets: { ...rest.thinkingBudgets } },
       configuredMaxTokens: catalog.configuredMaxTokens,
+      warnings: catalog.warnings,
       piProvider: buildProvider({
         provider,
         displayName,
