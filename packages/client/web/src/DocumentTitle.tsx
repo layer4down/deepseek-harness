@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react'
 export interface DocumentTitleProps {
   /** Durable title of the selected session, or undefined for the product title. */
   title?: string
+  /** Custom (activity-visibility): live sessions (running or awaiting the user) across the registry. */
+  activeCount?: number
 }
 
 /**
@@ -12,11 +14,14 @@ export interface DocumentTitleProps {
  * @param props - selected session title projection.
  * @returns no rendered content.
  */
-export function DocumentTitle({ title }: DocumentTitleProps): null {
+export function DocumentTitle({ title, activeCount }: DocumentTitleProps): null {
   const original = useRef(document.title)
   useEffect(() => {
-    document.title = title === undefined ? original.current : `${title} — ${original.current}`
+    // Custom (activity-visibility): a browser-tab badge for live work; the tab
+    // is the only peripheral cue when this app is not the focused tab.
+    const prefix = activeCount === undefined || activeCount <= 0 ? '' : `(${activeCount} active) `
+    document.title = title === undefined ? original.current : `${prefix}${title} — ${original.current}`
     return () => { document.title = original.current }
-  }, [title])
+  }, [title, activeCount])
   return null
 }

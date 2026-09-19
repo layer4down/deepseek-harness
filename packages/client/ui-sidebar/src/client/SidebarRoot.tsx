@@ -20,8 +20,9 @@ import clsx from 'clsx'
 import {
   BrandWordmark, FishLogo,
   IconNewChatOutline16, IconPanelLeftOutline16,
-  Tooltip,
+  Menu, StateDot, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import css from './SidebarRoot.module.css'
 
@@ -46,6 +47,8 @@ export function SidebarRoot({
   width,
   startSession,
   toggleSidebar,
+  sessionsList,
+  openSession,
   t,
   renderSlot,
 }: SidebarRootComponentProps) {
@@ -113,6 +116,34 @@ export function SidebarRoot({
     }
   }, [pointerInside])
 
+  // Custom (activity-visibility): aggregate live work across ALL sessions —
+  // running (own or subagent) and awaiting the user — so one glance at this
+  // column answers "is anything busy anywhere?" without opening a single tree.
+  const [, setActivityTick] = useState(0)
+  useEffect(() => sessionsList.subscribe(() => { setActivityTick(v => v + 1) }), [sessionsList])
+  const [activityOpen, setActivityOpen] = useState(false)
+  const activity = (() => {
+    const snap = sessionsList.getSnapshot()
+    const childRunning: Record<string, number> = {}
+    for (const s of Object.values(snap.byId)) {
+      const pid = s.parentId
+      if (s.origin === 'subagent' && s.running && pid !== undefined) childRunning[pid] = (childRunning[pid] ?? 0) + 1
+    }
+    let running = 0
+    let pending = 0
+    const items: { id: SessionId; label: string; state: 'warning' | 'ongoing' }[] = []
+    for (const s of Object.values(snap.byId)) {
+      if (s.origin === 'subagent' || s.blank) continue
+      const wait = s.pendingInteraction !== undefined
+      const run = s.running || (childRunning[s.id] ?? 0) > 0
+      if (!wait && !run) continue
+      if (wait) pending += 1
+      else running += 1
+      items.push({ id: s.id, label: s.displayTitle, state: wait ? 'warning' : 'ongoing' })
+    }
+    return { running, pending, items }
+  })()
+
   return (
     <div
       ref={column}
@@ -139,6 +170,36 @@ export function SidebarRoot({
           >
             <BrandWordmark />
           </button>
+        )}
+        {/* Custom (activity-visibility): the global activity pill. Quiet when
+            nothing is live; opens a jump menu over every live session. */}
+        {activity.items.length > 0 && (
+          <Menu
+            open={activityOpen}
+            onClose={() => { setActivityOpen(false) }}
+            items={activity.items.map(it => ({ id: it.id, label: it.label, icon: <StateDot state={it.state} /> }))}
+            onSelect={(id) => { setActivityOpen(false); openSession(id as SessionId) }}
+            portal
+            closeOnPointerLeave
+            anchor={(
+              <button
+                type="button"
+                className={clsx(css.activityPill, activity.pending > 0 && css.activityWaiting)}
+                aria-label={t('activity.aria', { waiting: activity.pending, running: activity.running })}
+                onClick={() => { setActivityOpen(v => !v) }}
+              >
+                <StateDot state={activity.pending > 0 ? 'warning' : 'ongoing'} />
+                {wide && (
+                  <span>
+                    {[
+                      activity.pending > 0 ? t('activity.waiting', { n: activity.pending }) : undefined,
+                      activity.running > 0 ? t('activity.running', { n: activity.running }) : undefined,
+                    ].filter((x): x is string => x !== undefined).join(' · ')}
+                  </span>
+                )}
+              </button>
+            )}
+          />
         )}
         {/* Rail resting state is the whale mark; hovering swaps in the panel
             icon (the expand affordance, figma sidebar-hover flow). */}

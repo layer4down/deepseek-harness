@@ -354,3 +354,15 @@
     transition: none;
   }
 }
+
+/* Custom (activity-visibility): folded-group activity chip — state dot + count. */
+.activityMeta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 2px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}

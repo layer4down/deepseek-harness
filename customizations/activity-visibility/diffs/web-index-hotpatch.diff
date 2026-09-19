@@ -1,0 +1,38 @@
+--- a/dsh-client-web/lib/index.js
++++ b/dsh-client-web/lib/index.js
+@@ -35,14 +35,15 @@
+ * @param props - selected session title projection.
+ * @returns no rendered content.
+ */
+-function DocumentTitle({ title }) {
++function DocumentTitle({ title, activeCount }) {
+ 	const original = useRef(document.title);
+ 	useEffect(() => {
+-		document.title = title === void 0 ? original.current : `${title} — ${original.current}`;
++		const prefix = activeCount === void 0 || activeCount <= 0 ? "" : "(" + activeCount + " active) ";
++		document.title = title === void 0 ? original.current : prefix + title + " — " + original.current;
+ 		return () => {
+ 			document.title = original.current;
+ 		};
+-	}, [title]);
++	}, [title, activeCount]);
+ 	return null;
+ }
+ //#endregion
+@@ -62,7 +63,15 @@
+ 			const id = state.current;
+ 			return id === void 0 ? void 0 : state.byId[id]?.title;
+ 		});
+-		return jsx(DocumentTitle, { ...title === void 0 ? {} : { title } });
++		const activeCount = useSessions((state) => {
++			let n = 0;
++			for (const s of Object.values(state.byId)) {
++				if (s.origin === "subagent" || s.blank) continue;
++				if (s.running === true || s.pendingInteraction !== void 0) n += 1;
++			}
++			return n;
++		});
++		return jsx(DocumentTitle, { ...title === void 0 ? {} : { title }, activeCount });
+ 	};
+ 	return () => jsxs(Fragment, { children: [jsx(SessionDocumentTitle, {}), ctx.slots.renderSlot("root", {})] });
+ }

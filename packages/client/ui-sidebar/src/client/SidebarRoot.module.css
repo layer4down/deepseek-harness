@@ -282,3 +282,36 @@
     animation: none;
   }
 }
+
+/* Custom (activity-visibility): global activity pill in the brand row. */
+.activityPill {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  margin-right: 4px;
+  border: none;
+  border-radius: 12px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+  flex: none;
+  font-size: 12px;
+}
+
+.activityPill:hover {
+  color: var(--dsw-alias-label-primary);
+}
+
+.collapsed .activityPill {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.activityWaiting {
+  color: var(--dsw-alias-state-error-primary);
+}

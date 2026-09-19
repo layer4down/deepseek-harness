@@ -36,6 +36,10 @@ export function apply(ctx: ClientContext): void {
     // (current Session Workspace, then recent Workspace).
     startSession: (workspaceId) => { ctx.workspaces.startSession(workspaceId) },
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
+    // Custom (activity-visibility): the pill reads live state straight from the
+    // shared sessions store and can jump to any session.
+    openSession: (id) => { ctx.sessions.open(id) },
+    sessionsList: ctx.sessions.list,
   })
   ctx.effect(
     () => ctx.slots.register({

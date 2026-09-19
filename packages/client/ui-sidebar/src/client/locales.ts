@@ -6,6 +6,9 @@ export const zh = {
   'session.new.label': '新建会话',
   'toggle.open': '打开侧边栏',
   'toggle.collapse': '收起侧边栏',
+  'activity.waiting': '{n} 个等待操作',
+  'activity.running': '{n} 个运行中',
+  'activity.aria': '{waiting} 个等待操作，{running} 个运行中',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -17,4 +20,7 @@ export const en = {
   'session.new.label': 'New session',
   'toggle.open': 'Open sidebar',
   'toggle.collapse': 'Collapse sidebar',
+  'activity.waiting': '{n} waiting for you',
+  'activity.running': '{n} running',
+  'activity.aria': '{waiting} waiting, {running} running',
 } satisfies Record<SidebarKey, string>

@@ -33,7 +33,16 @@ export function buildRenderApp(deps: AssemblyDeps): () => ReactNode {
       const id = state.current
       return id === undefined ? undefined : state.byId[id]?.title
     })
-    return <DocumentTitle {...title === undefined ? {} : { title }} />
+    // Custom (activity-visibility): count every live session, not just current.
+    const activeCount = useSessions((state) => {
+      let n = 0
+      for (const s of Object.values(state.byId)) {
+        if (s.origin === 'subagent' || s.blank) continue
+        if (s.running || s.pendingInteraction !== undefined) n += 1
+      }
+      return n
+    })
+    return <DocumentTitle {...title === undefined ? {} : { title }} activeCount={activeCount} />
   }
   return () => (
     <>

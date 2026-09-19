@@ -120,7 +120,13 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, t }: 
   const row = group
   // The ungrouped bucket has no workspace title: its label is dictionary copy.
   const label = row.workspaceId === undefined ? t('group.ungrouped') : row.label
-  const active = group.expanded && group.containsCurrent
+  // Custom (activity-visibility): live activity tints the folder even while the
+  // group is folded, and the row carries an activity chip (see below).
+  const active = (group.expanded && group.containsCurrent) || row.runningCount > 0 || row.pendingCount > 0
+  const activityParts: string[] = []
+  if (row.pendingCount > 0) activityParts.push(t('group.activity.pending', { n: row.pendingCount }))
+  if (row.runningCount > 0) activityParts.push(t('group.activity.running', { n: row.runningCount }))
+  const activityTitle = activityParts.join(' · ')
   const [menuOpen, setMenuOpen] = useState(false)
   const workspaceMenuItems = [
     { id: 'rename', label: t('rename'), icon: <IconEditOutline16 /> },
@@ -151,6 +157,12 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, t }: 
       <span className={css.projectText}>
         <span className={css.title}>{label}</span>
       </span>
+      {(row.runningCount > 0 || row.pendingCount > 0) && (
+        <span className={css.activityMeta} title={activityTitle}>
+          {row.pendingCount > 0 && <><StateDot state="warning" /><span>{row.pendingCount}</span></>}
+          {row.runningCount > 0 && <><StateDot state="ongoing" /><span>{row.runningCount}</span></>}
+        </span>
+      )}
       <span className={css.rowActions}>
         {actions !== undefined && (
           <Menu

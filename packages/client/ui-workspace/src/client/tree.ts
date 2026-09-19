@@ -47,6 +47,10 @@ export interface GroupNode {
   label: string
   /** Total visible sessions in the group. */
   sessionCount: number
+  /** Custom (activity-visibility): own + subagent running count; visible even when folded. */
+  runningCount: number
+  /** Custom (activity-visibility): sessions awaiting user interaction; visible even when folded. */
+  pendingCount: number
   expanded: boolean
   /** The group contains the selected session (active folder tint; supplied here so the renderer never scans). */
   containsCurrent: boolean
@@ -257,6 +261,16 @@ export function deriveGroups(
   const groups: GroupNode[] = []
   for (const g of groupByWorkspace(list, workspaces, archived, view.ungroupedOrder)) {
     const expanded = expandedGroups.has(g.key)
+    // Custom (activity-visibility): aggregate live work before the fold so
+    // collapsed groups still carry their running/pending counts to the row.
+    let runningCount = 0
+    let pendingCount = 0
+    for (const s of g.sessions) {
+      if (s.blank) continue
+      if (s.pendingInteraction !== undefined) pendingCount += 1
+      if (s.running) runningCount += 1
+      runningCount += descendants.get(s.id)?.runningCount ?? 0
+    }
     groups.push({
       key: g.key,
       workspaceId: g.workspaceId,
@@ -264,6 +278,8 @@ export function deriveGroups(
       createdAt: g.createdAt,
       label: g.label,
       sessionCount: g.sessions.length,
+      runningCount,
+      pendingCount,
       expanded,
       containsCurrent: g.key === currentGroup,
       sessions: expanded ? g.sessions.map(session => sessionNode(session, descendants)) : [],
